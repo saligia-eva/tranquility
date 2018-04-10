@@ -196,10 +196,10 @@ class DruidBeamMaker[A](
 
   override def fromDict(d: Dict) = {
     val interval = if (d contains "interval") {
-      new Interval(d("interval"), ISOChronology.getInstanceUTC)
+      new Interval(d("interval"), ISOChronology.getInstance(DateTimeZone.forID("+0800")))
     } else {
       // Backwards compatibility (see toDict).
-      beamTuning.segmentBucket(new DateTime(d("timestamp"), ISOChronology.getInstanceUTC))
+      beamTuning.segmentBucket(new DateTime(d("timestamp"), ISOChronology.getInstance(DateTimeZone.forID("+0800"))))
     }
     require(
       beamTuning.segmentGranularity.widen(interval) == interval,
@@ -228,7 +228,7 @@ class DruidBeamMaker[A](
 object DruidBeamMaker
 {
   def generateAvailabilityGroup(dataSource: String, ts: DateTime, partition: Int): String = {
-    "%s-%s-%04d".format(dataSource, ts.withChronology(ISOChronology.getInstanceUTC), partition)
+    "%s-%s-%04d".format(dataSource, ts.withChronology(ISOChronology.getInstance(DateTimeZone.forID("+0800"))), partition)
   }
 
   def generateBaseFirehoseId(
@@ -241,7 +241,7 @@ object DruidBeamMaker
     // Not only is this a nasty hack, it also only works if the RT task hands things off in a timely manner. We'd rather
     // use UUIDs, but this creates a ton of clutter in service discovery.
 
-    val tsUtc = new DateTime(ts.getMillis, ISOChronology.getInstanceUTC)
+    val tsUtc = new DateTime(ts.getMillis, ISOChronology.getInstance(DateTimeZone.forID("+0800")))
 
     val cycleBucket = segmentGranularity match {
       case Granularity.SECOND => (tsUtc.minuteOfHour().get * 60 + tsUtc.secondOfMinute().get) % 900 // 900 buckets

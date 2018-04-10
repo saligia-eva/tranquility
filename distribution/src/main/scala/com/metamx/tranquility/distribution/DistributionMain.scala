@@ -22,10 +22,12 @@ package com.metamx.tranquility.distribution
 import com.metamx.tranquility.console.ConsoleMain
 import com.metamx.tranquility.kafka.KafkaMain
 import com.metamx.tranquility.server.http.ServerMain
+import org.joda.time.DateTimeZone
 
 object DistributionMain
 {
   def main(args: Array[String]) {
+    DateTimeZone.setDefault(DateTimeZone.forID("+0800"))
     args.headOption match {
       case Some("console") =>
         ConsoleMain.main(args.drop(1))

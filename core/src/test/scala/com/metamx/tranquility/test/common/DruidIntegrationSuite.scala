@@ -262,11 +262,11 @@ trait DruidIntegrationSuite extends Logging with CuratorRequiringSuite
         .build(),
         Seq(
           Map(
-            "timestamp" -> timekeeper.now.withZone(DateTimeZone.UTC).toString(),
+            "timestamp" -> timekeeper.now.withZone(DateTimeZone.forID("+0800")).toString(),
             "result" -> Map("barr" -> 2)
           ),
           Map(
-            "timestamp" -> (timekeeper.now + 1.minute).withZone(DateTimeZone.UTC).toString(),
+            "timestamp" -> (timekeeper.now + 1.minute).withZone(DateTimeZone.forID("+0800")).toString(),
             "result" -> Map("barr" -> 3)
           )
         )),
@@ -280,11 +280,11 @@ trait DruidIntegrationSuite extends Logging with CuratorRequiringSuite
         .build(),
         Seq(
           Map(
-            "timestamp" -> timekeeper.now.withZone(DateTimeZone.UTC).toString(),
+            "timestamp" -> timekeeper.now.withZone(DateTimeZone.forID("+0800")).toString(),
             "result" -> Map("barr" -> 0)
           ),
           Map(
-            "timestamp" -> (timekeeper.now + 1.minute).withZone(DateTimeZone.UTC).toString(),
+            "timestamp" -> (timekeeper.now + 1.minute).withZone(DateTimeZone.forID("+0800")).toString(),
             "result" -> Map("barr" -> 3)
           )
         ))

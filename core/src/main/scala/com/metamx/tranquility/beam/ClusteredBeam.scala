@@ -132,7 +132,7 @@ class ClusteredBeam[EventType: Timestamper, InnerBeamType <: Beam[EventType]](
 
   // We will refuse to create beams earlier than this timestamp. The purpose of this is to prevent recreating beams
   // that we thought were closed.
-  @volatile private[this] var localLatestCloseTime = new DateTime(0, ISOChronology.getInstanceUTC)
+  @volatile private[this] var localLatestCloseTime = new DateTime(0, ISOChronology.getInstance(DateTimeZone.forID("+0800")))
 
   private[this] val rand = new Random
 
@@ -180,21 +180,24 @@ class ClusteredBeam[EventType: Timestamper, InnerBeamType <: Beam[EventType]](
 
   val timestamper: EventType => DateTime = {
     val theImplicit = implicitly[Timestamper[EventType]].timestamp _
-    t => theImplicit(t).withZone(DateTimeZone.UTC)
+    t => theImplicit(t).withZone(DateTimeZone.forID("+0800"))
   }
 
   private[this] def beam(timestamp: DateTime, now: DateTime): Future[Beam[EventType]] = {
     val bucket = tuning.segmentBucket(timestamp)
+
     val creationInterval = new Interval(
       tuning.segmentBucket(now - tuning.windowPeriod).start.getMillis,
       tuning.segmentBucket(Seq(now + tuning.warmingPeriod, now + tuning.windowPeriod).maxBy(_.getMillis)).end.getMillis,
-      ISOChronology.getInstanceUTC
-    )
+      ISOChronology.getInstance(DateTimeZone.forID("+0800"))
+    ) //创建间隔
+
     val windowInterval = new Interval(
       tuning.segmentBucket(now - tuning.windowPeriod).start.getMillis,
       tuning.segmentBucket(now + tuning.windowPeriod).end.getMillis,
-      ISOChronology.getInstanceUTC
-    )
+      ISOChronology.getInstance(DateTimeZone.forID("+0800"))
+    ) // 窗口间隔
+
     val futureBeamOption = beams.get(timestamp.getMillis) match {
       case _ if !open => Future.value(None)
       case Some(x) if windowInterval.overlaps(bucket) => Future.value(Some(x))
@@ -231,11 +234,13 @@ class ClusteredBeam[EventType: Timestamper, InnerBeamType <: Beam[EventType]](
               // We might want to cover multiple time segments in advance.
               val numSegmentsToCover = tuning.minSegmentsPerBeam +
                 rand.nextInt(tuning.maxSegmentsPerBeam - tuning.minSegmentsPerBeam + 1)
+
               val intervalToCover = new Interval(
                 timestamp.getMillis,
                 tuning.segmentGranularity.increment(timestamp, numSegmentsToCover).getMillis,
-                ISOChronology.getInstanceUTC
-              )
+                ISOChronology.getInstance(DateTimeZone.forID("+0800"))
+              ) // 覆盖间隔
+
               val timestampsToCover = tuning.segmentGranularity.getIterable(intervalToCover).asScala.map(_.start)
 
               // OK, create them where needed.
@@ -270,10 +275,12 @@ class ClusteredBeam[EventType: Timestamper, InnerBeamType <: Beam[EventType]](
                 })
                 (ts.getMillis, tsNewDicts)
               })
+
               val newLatestCloseTime = new DateTime(
                 (Seq(prev.latestCloseTime.getMillis) ++ (prev.beamDictss.keySet -- newBeamDictss.keySet)).max,
-                ISOChronology.getInstanceUTC
-              )
+                ISOChronology.getInstance(DateTimeZone.forID("+0800"))
+              ) // 最后关闭时间
+
               ClusteredBeamMeta(
                 newLatestCloseTime,
                 newBeamDictss
@@ -342,7 +349,7 @@ class ClusteredBeam[EventType: Timestamper, InnerBeamType <: Beam[EventType]](
   }
 
   override def sendAll(events: Seq[EventType]): Seq[Future[SendResult]] = {
-    val now = timekeeper.now.withZone(DateTimeZone.UTC)
+    val now = timekeeper.now.withZone(DateTimeZone.forID("+0800"))
     // Events, grouped and ordered by truncated timestamp, with their original indexes remembered
     val eventsWithPromises = Vector() ++ events.map(event => (event, Promise[SendResult]()))
     val grouped: Seq[(DateTime, IndexedSeq[(EventType, Promise[SendResult])])] = (eventsWithPromises groupBy {
@@ -476,28 +483,28 @@ case class ClusteredBeamMeta(latestCloseTime: DateTime, beamDictss: Map[Long, Se
       // latestTime is only being written for backwards compatibility
       "latestTime" -> new DateTime(
         (Seq(latestCloseTime.getMillis) ++ beamDictss.map(_._1)).max,
-        ISOChronology.getInstanceUTC
+        ISOChronology.getInstance(DateTimeZone.forID("+0800"))
       ).toString(),
       "latestCloseTime" -> latestCloseTime.toString(),
-      "beams" -> beamDictss.map(kv => (new DateTime(kv._1, ISOChronology.getInstanceUTC).toString(), kv._2))
+      "beams" -> beamDictss.map(kv => (new DateTime(kv._1, ISOChronology.getInstance(DateTimeZone.forID("+0800"))).toString(), kv._2))
     )
   )
 }
 
 object ClusteredBeamMeta
 {
-  def empty = ClusteredBeamMeta(new DateTime(0, ISOChronology.getInstanceUTC), Map.empty)
+  def empty = ClusteredBeamMeta(new DateTime(0, ISOChronology.getInstance(DateTimeZone.forID("+0800"))), Map.empty)
 
   def fromBytes[A](objectMapper: ObjectMapper, bytes: Array[Byte]): Either[Exception, ClusteredBeamMeta] = {
     try {
       val d = objectMapper.readValue(bytes, classOf[Dict])
       val beams: Map[Long, Seq[Dict]] = dict(d.getOrElse("beams", Dict())) map {
         case (k, vs) =>
-          val ts = new DateTime(k, ISOChronology.getInstanceUTC)
+          val ts = new DateTime(k, ISOChronology.getInstance(DateTimeZone.forID("+0800")))
           val beamDicts = list(vs) map (dict(_))
           (ts.getMillis, beamDicts)
       }
-      val latestCloseTime = new DateTime(d.getOrElse("latestCloseTime", 0L), ISOChronology.getInstanceUTC)
+      val latestCloseTime = new DateTime(d.getOrElse("latestCloseTime", 0L), ISOChronology.getInstance(DateTimeZone.forID("+0800")))
       Right(ClusteredBeamMeta(latestCloseTime, beams))
     }
     catch {

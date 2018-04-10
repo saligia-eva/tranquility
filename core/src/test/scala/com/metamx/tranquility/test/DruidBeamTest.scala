@@ -150,7 +150,7 @@ class DruidBeamTest extends FunSuite with Matchers
       null,
       DruidGuicer.Default.objectMapper
     )
-    val interval = new Interval("2000/PT1H", ISOChronology.getInstanceUTC)
+    val interval = new Interval("2000/PT1H", ISOChronology.getInstance(DateTimeZone.forID("+0800")))
     val taskBytes = druidBeamMaker.taskBytes(
       interval,
       "mygroup",
@@ -175,7 +175,7 @@ class DruidBeamTest extends FunSuite with Matchers
     ioConfig.getPlumberSchool should be(null)
     ioConfig.getFirehoseFactoryV2 should be(null)
     ioConfig.getFirehoseFactory.asInstanceOf[ClippedFirehoseFactory].getInterval
-      .withChronology(ISOChronology.getInstanceUTC) should be(interval)
+      .withChronology(ISOChronology.getInstance(DateTimeZone.forID("+0800"))) should be(interval)
 
     val dataSchema = task.getRealtimeIngestionSchema.getDataSchema
     dataSchema.getDataSource should be("mydatasource")
@@ -212,7 +212,7 @@ class DruidBeamTest extends FunSuite with Matchers
       DruidGuicer.Default.objectMapper
     )
 
-    val interval = new Interval("2000/PT1H", ISOChronology.getInstanceUTC)
+    val interval = new Interval("2000/PT1H", ISOChronology.getInstance(DateTimeZone.forID("+0800")))
     val taskBytes = druidBeamMaker.taskBytes(
       interval,
       "mygroup",

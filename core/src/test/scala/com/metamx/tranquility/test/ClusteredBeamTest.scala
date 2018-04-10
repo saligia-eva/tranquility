@@ -621,7 +621,7 @@ class ClusteredBeamTest extends FunSuite with CuratorRequiringSuite with BeforeA
         |   "latestCloseTime" : "2000-01-01T19:30:00.000+05:30"
         |}""".stripMargin
     def checkMeta(meta: ClusteredBeamMeta) {
-      assert(meta.latestCloseTime === new DateTime("2000-01-01T14:00:00.000Z").withZone(DateTimeZone.UTC))
+      assert(meta.latestCloseTime === new DateTime("2000-01-01T14:00:00.000Z").withZone(DateTimeZone.forID("+0800")))
       assert(
         meta.beamDictss.keys.toSet === Set(
           new DateTime("2000-01-01T15:00:00.000Z").getMillis
